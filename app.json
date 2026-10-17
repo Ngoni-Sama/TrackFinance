@@ -5,10 +5,15 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "android": {
       "package": "zw.trackfinance.app",
-      "permissions": ["android.permission.READ_SMS", "android.permission.RECEIVE_SMS"],
+      "permissions": [
+        "android.permission.READ_SMS",
+        "android.permission.RECEIVE_SMS"
+      ],
       "blockedPermissions": [
         "android.permission.SEND_SMS",
         "android.permission.RECORD_AUDIO",
@@ -18,9 +23,34 @@
     },
     "plugins": [
       "@morrowdigital/watermelondb-expo-plugin",
-      ["expo-build-properties", { "android": { "minSdkVersion": 26, "packagingOptions": { "pickFirst": ["**/libc++_shared.so"] } } }],
-      ["expo-image-picker", { "photosPermission": "TrackFinance uses your photos to set a business logo and attach receipts.", "microphonePermission": false, "cameraPermission": false }],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so"
+              ]
+            }
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TrackFinance uses your photos to set a business logo and attach receipts.",
+          "microphonePermission": false,
+          "cameraPermission": false
+        }
+      ],
       "react-native-background-fetch"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2fde46d1-4e8f-43ea-83b2-8d4918025b50"
+      }
+    },
+    "owner": "ngoni-sama"
   }
 }
