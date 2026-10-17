@@ -19,7 +19,10 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0078AA"
+      }
     },
     "plugins": [
       "@morrowdigital/watermelondb-expo-plugin",
@@ -51,6 +54,10 @@
         "projectId": "2fde46d1-4e8f-43ea-83b2-8d4918025b50"
       }
     },
-    "owner": "ngoni-sama"
+    "owner": "ngoni-sama",
+    "splash": {
+      "backgroundColor": "#0078AA",
+      "resizeMode": "contain"
+    }
   }
 }
