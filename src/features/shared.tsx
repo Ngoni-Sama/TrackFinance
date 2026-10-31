@@ -2,11 +2,12 @@ import { format } from 'date-fns';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Row, Segmented } from '../components/Controls';
+import { MerchantAvatar } from '../components/MerchantAvatar';
 import { Body, Caption } from '../components/Typography';
 import { categoryLabel, CURRENCIES } from '../core/constants';
 import { formatMoney } from '../core/currency';
 import { Entry, toEntries } from '../core/summaries';
-import { CATEGORY_COLORS, margin, useTheme } from '../core/theme';
+import { margin, useTheme } from '../core/theme';
 import { expenseToPlain, queries, txToPlain } from '../data/repositories';
 import { useQuery } from '../data/useObservable';
 
@@ -16,7 +17,8 @@ export function useEntries() {
   const exps = useQuery(queries.expenses);
   const plainTxs = useMemo(() => txs.map(txToPlain), [txs]);
   const entries = useMemo(() => toEntries(plainTxs, exps.map(expenseToPlain)), [plainTxs, exps]);
-  return { entries, txs: plainTxs };
+  const smsById = useMemo(() => new Map(txs.map((t) => [t.id, t.rawBody])), [txs]);
+  return { entries, txs: plainTxs, smsById };
 }
 
 /** Selected display currency, defaulting to the business profile's currency. */
@@ -40,7 +42,9 @@ export function EntryRow({ entry, onPress }: { entry: Entry; onPress?: () => voi
   return (
     <Pressable onPress={onPress} disabled={!onPress}>
       <Row style={{ paddingVertical: margin * 0.8 }}>
-        <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: CATEGORY_COLORS[entry.category] ?? t.caption, marginRight: margin }} />
+        <View style={{ marginRight: margin }}>
+          <MerchantAvatar name={entry.title} category={entry.category} />
+        </View>
         <View style={{ flex: 1 }}>
           <Body numberOfLines={1}>{entry.title}</Body>
           <Caption upper={false}>

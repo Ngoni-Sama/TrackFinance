@@ -8,7 +8,7 @@ import { Body, Caption } from '../../components/Typography';
 import { ThemeMode, useSettingsStore } from '../../core/settingsStore';
 import { clearAllData, isEmpty, seedDemoData } from '../../data/demoData';
 import { exportCsv } from '../../data/repositories';
-import { hydrateSettings, setThemeMode } from '../../data/settings';
+import { hydrateSettings, setAiEnabled, setMerchantLogos, setThemeMode } from '../../data/settings';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { shareCsv } from '../../pdf/pdfGenerator';
 
@@ -26,7 +26,7 @@ function Link({ title, subtitle, onPress }: { title: string; subtitle?: string; 
 
 export function SettingsScreen() {
   const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { themeMode, smsEnabled } = useSettingsStore();
+  const { themeMode, smsEnabled, merchantLogos, aiEnabled } = useSettingsStore();
 
   const onExport = async () => {
     try {
@@ -77,8 +77,23 @@ export function SettingsScreen() {
       </Pane>
       <Pane title="Privacy">
         <Body muted>
-          Everything stays on this phone. SMS are read and parsed on-device; no SMS content, transaction or invoice is uploaded anywhere.
+          SMS are read and parsed on this phone, and your data is stored only here.
+          {aiEnabled
+            ? ' The AI coach is on: when you ask it something, a snapshot of your finances (including recent SMS text) is sent to Cloudflare Workers AI to answer.'
+            : ' Nothing is uploaded.'}
         </Body>
+        <Separator />
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Body>Merchant logos</Body>
+          <Segmented options={['on', 'off'] as const} value={merchantLogos ? 'on' : 'off'} onChange={(v) => setMerchantLogos(v === 'on')} labels={{ on: 'On', off: 'Off' }} />
+        </Row>
+        <Caption upper={false}>Loads website icons for known companies (sends only the company's web address).</Caption>
+        {aiEnabled ? (
+          <>
+            <Separator />
+            <Link title="Turn off AI coach" subtitle="Stops sending data to the assistant" onPress={() => setAiEnabled(false)} />
+          </>
+        ) : null}
       </Pane>
     </Screen>
   );

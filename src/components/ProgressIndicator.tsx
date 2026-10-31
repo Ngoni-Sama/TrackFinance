@@ -11,6 +11,8 @@ interface Props {
   color?: string;
   /** Decimal places for the centre label (pc_info shows whole numbers). */
   precision?: number;
+  /** Show the real value in the centre even when it is outside 0–100 (the ring itself stays clamped). */
+  showOverflow?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * (the BATTERY HEALTH dial in pc_info): a thin empty track, an accent arc
  * starting at 12 o'clock, and the value centred inside.
  */
-export function ProgressIndicator({ percentage, size = 72, lineWidth = 4, color, precision = 0 }: Props) {
+export function ProgressIndicator({ percentage, size = 72, lineWidth = 4, color, precision = 0, showOverflow }: Props) {
   const t = useTheme();
   const p = clampPercent(percentage);
   const r = (size - lineWidth) / 2;
@@ -49,7 +51,7 @@ export function ProgressIndicator({ percentage, size = 72, lineWidth = 4, color,
       </Svg>
       <View style={[StyleSheet.absoluteFill, styles.center]}>
         <Text style={{ color: t.text, fontSize: size < 60 ? fontSize.caption : fontSize.detail }}>
-          {p.toFixed(precision)}%
+          {(showOverflow && Number.isFinite(percentage) ? percentage : p).toFixed(precision)}%
         </Text>
       </View>
     </View>

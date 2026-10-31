@@ -44,14 +44,16 @@ interface DialProps {
   color?: string;
   size?: number;
   footnote?: string;
+  precision?: number;
+  showOverflow?: boolean;
 }
 
 /** pc_info battery-health layout: centred uppercase caption above a ring. */
-export function PercentDial({ percentage, caption, color, size, footnote }: DialProps) {
+export function PercentDial({ percentage, caption, color, size, footnote, precision, showOverflow }: DialProps) {
   return (
     <View style={{ alignItems: 'center', marginVertical: margin / 2, flex: 1 }}>
       <Caption style={{ marginBottom: margin / 2, textAlign: 'center' }}>{caption}</Caption>
-      <ProgressIndicator percentage={percentage} color={color} size={size} />
+      <ProgressIndicator percentage={percentage} color={color} size={size} precision={precision} showOverflow={showOverflow} />
       {footnote ? (
         <Caption upper={false} style={{ marginTop: margin / 2, textAlign: 'center' }}>
           {footnote}

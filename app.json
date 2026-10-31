@@ -59,7 +59,8 @@
     "extra": {
       "eas": {
         "projectId": "2fde46d1-4e8f-43ea-83b2-8d4918025b50"
-      }
+      },
+      "aiUrl": "https://trackfinance-ai.ma360-ngoni.workers.dev"
     },
     "owner": "ngoni-sama",
     "splash": {

@@ -9,6 +9,9 @@ export const CATEGORIES = [
   'health',
   'education',
   'entertainment',
+  'subscriptions',
+  'family',
+  'business',
   'other',
 ] as const;
 

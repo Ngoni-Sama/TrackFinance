@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { useTheme } from '../core/theme';
+import { CoachScreen } from '../features/coach/CoachScreen';
 import { BusinessProfileScreen } from '../features/businessProfile/BusinessProfileScreen';
 import { CustomerEditScreen } from '../features/customers/CustomerEditScreen';
 import { CustomersScreen } from '../features/customers/CustomersScreen';
@@ -43,6 +44,7 @@ const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Home: 'speedometer-outline',
   Activity: 'swap-vertical-outline',
   Expenses: 'wallet-outline',
+  Coach: 'sparkles-outline',
   Invoices: 'document-text-outline',
   More: 'settings-outline',
 };
@@ -63,6 +65,7 @@ function Tabs() {
       <Tab.Screen name="Home" component={DashboardScreen} options={{ title: 'TrackFinance', tabBarLabel: 'Home' }} />
       <Tab.Screen name="Activity" component={TransactionsScreen} />
       <Tab.Screen name="Expenses" component={ExpensesScreen} />
+      <Tab.Screen name="Coach" component={CoachScreen} options={{ title: 'Coach' }} />
       <Tab.Screen name="Invoices" component={InvoicesScreen} />
       <Tab.Screen name="More" component={SettingsScreen} options={{ title: 'Settings' }} />
     </Tab.Navigator>

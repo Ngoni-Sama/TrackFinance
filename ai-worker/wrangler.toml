@@ -1,0 +1,24 @@
+name = "trackfinance-ai"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+[vars]
+# ~200 neurons per chat with this model; 45 a day stays inside the free 10,000 neurons/day.
+MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+DAILY_LIMIT = "45"
+
+# 20 requests per minute per device and per IP.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "7301"
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+[[kv_namespaces]]
+binding = "USAGE"
+id = "6529fb24dba046d2a0ae496d60a003ba"

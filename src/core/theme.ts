@@ -83,5 +83,10 @@ export const CATEGORY_COLORS: Record<string, string> = {
   health: '#E84A8F',
   education: '#2C7FB8',
   entertainment: '#F1C40F',
+  subscriptions: '#8E44AD',
+  family: '#E67E22',
+  business: '#34495E',
+  income: '#009600',
+  loan: '#D35400',
   other: '#95A5A6',
 };

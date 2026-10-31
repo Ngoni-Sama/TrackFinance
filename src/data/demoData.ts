@@ -33,11 +33,13 @@ function sms(now: Date): [string, string, Date][] {
     add('+263164USD', `You have paid USD 250.00 to 0771234567 TENDAI MOYO. Txn ID: RENT${m}. New wallet balance: USD 400.00.`, addDays(base, 1));
     add('+263164USD', `Payment of USD ${m === 2 ? '42.00' : '55.00'} to ZESA PREPAID was successful. Txn ID: ZS${m}. New wallet balance: USD 345.00.`, addDays(base, 6));
     add('+263164USD', `Payment of USD ${m === 2 ? '61.00' : '74.50'} to ZUPCO was successful. Txn ID: ZP${m}. New wallet balance: USD 270.00.`, addDays(base, 12));
+    add('+263164USD', `Payment of USD 29.00 to DSTV ZIMBABWE was successful. Txn ID: DS${m}. New wallet balance: USD 241.00.`, addDays(base, 4));
+    add('+263164USD', `You have sent USD 20.00 to 0773111222 CHIPO MUSARA. Txn ID: CM${m}. New wallet balance: USD 221.00.`, addDays(base, 14));
   }
 
   // This month.
-  add('+263164USD', 'You have received USD 950.00 from 263772000111 - ACME PVT LTD. Approval Code: SAL0. New wallet balance: USD 1,012.40.', d(Math.min(now.getDate() - 1, 14), 9));
-  add('+263164USD', 'You have paid USD 250.00 to 0771234567 TENDAI MOYO. Txn ID: RENT0. New wallet balance: USD 762.40.', d(Math.min(now.getDate() - 1, 13), 10));
+  add('+263164USD', 'You have received USD 950.00 from 263772000111 - ACME PVT LTD. Approval Code: SAL0. New wallet balance: USD 1,012.40.', setHours(startOfMonth(now), 9));
+  add('+263164USD', 'You have paid USD 250.00 to 0771234567 TENDAI MOYO. Txn ID: RENT0. New wallet balance: USD 762.40.', setHours(addDays(startOfMonth(now), 1), 10));
   add('+263164USD', 'You have sent USD 40.00 to Omari. Txn ID: OM0. New wallet balance: USD 722.40.', d(12, 8));
   add('Omari', 'You have transferred USD 40.00 from EcoCash to your Omari account. New balance: USD 315.00.', d(12, 8));
   add('+263165', 'Your Kashagi loan of USD 30.00 has been credited to your EcoCash wallet. Please repay USD 33.00 by 28/' + String(addDays(now, 14).getMonth() + 1).padStart(2, '0') + '/' + addDays(now, 14).getFullYear() + '.', d(10, 15));
@@ -50,6 +52,9 @@ function sms(now: Date): [string, string, Date][] {
   add('+263164USD', 'Payment of USD 18.50 to CITY PHARMACY was successful. Txn ID: PH01. New wallet balance: USD 527.70.', d(2, 16));
   add('+263164USD', 'You have received USD 120.00 from 263773555222 - RUDO NCUBE. Approval Code: INV01. New wallet balance: USD 647.70.', d(1, 12));
   add('+263164USD', 'Payment of USD 9.60 to TM PICK N PAY was successful. Txn ID: PM02. New wallet balance: USD 638.10.', d(0, 8));
+  add('+263164USD', 'Payment of USD 29.00 to DSTV ZIMBABWE was successful. Txn ID: DS0. New wallet balance: USD 609.10.', setHours(addDays(startOfMonth(now), 4), 9));
+  add('+263164USD', 'You have sent USD 20.00 to 0773111222 CHIPO MUSARA. Txn ID: CM0. New wallet balance: USD 589.10.', setHours(addDays(startOfMonth(now), 14), 18));
+  add('+263164USD', 'You have sent USD 35.00 to 0712987654 BLESSING DUBE. Txn ID: BD0. New wallet balance: USD 554.10.', d(1, 20));
   add('CBZ', 'CBZ: Acc 01234XXXX debited with USD 45.00 POS purchase at SPAR BORROWDALE. Avail Bal USD 410.20', d(7, 18));
   add('+263143', 'Your 1GB data bundle has been activated.', d(4, 19)); // noise: ignored
   return out;
