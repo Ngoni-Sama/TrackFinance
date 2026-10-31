@@ -64,7 +64,9 @@ export function InvoicesScreen() {
               </Pane>
             )}
             <Segmented options={['all', 'draft', 'sent', 'paid'] as const} value={filter} onChange={setFilter} labels={{ all: 'All', draft: 'Draft', sent: 'Sent', paid: 'Paid' }} />
-            <Chip label="Manage customers" onPress={() => nav.navigate('Customers')} />
+            <Row>
+              <Chip label="Manage customers" onPress={() => nav.navigate('Customers')} />
+            </Row>
           </>
         }
         renderItem={({ item }) => {

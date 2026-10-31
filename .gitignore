@@ -12,3 +12,4 @@ npm-debug.*
 # Signing keys: back these up somewhere safe, never commit them
 credentials/
 credentials.json
+.claude/

@@ -6,7 +6,8 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "platforms": [
-      "android"
+      "android",
+      "web"
     ],
     "android": {
       "package": "zw.trackfinance.app",
@@ -21,6 +22,7 @@
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0078AA"
       }
     },
@@ -61,8 +63,14 @@
     },
     "owner": "ngoni-sama",
     "splash": {
-      "backgroundColor": "#0078AA",
-      "resizeMode": "contain"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0078AA"
+    },
+    "icon": "./assets/icon.png",
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     }
   }
 }

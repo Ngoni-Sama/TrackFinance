@@ -1,5 +1,32 @@
-# TrackFinance
-### SMS-powered budget, invoice and expense app for Zimbabwe
+<p align="center">
+  <img src="assets/brand/logo-wordmark.png" alt="TrackFinance" width="420" />
+</p>
+
+<p align="center"><b>Your EcoCash money, tracked automatically.</b><br/>
+SMS-powered budgets, expenses and invoices for Zimbabwe.</p>
+
+<p align="center">
+  <a href="https://ngoni-sama.github.io/TrackFinance/">Website</a> ·
+  <a href="https://github.com/Ngoni-Sama/TrackFinance/releases/latest">Download APK</a> ·
+  <a href="#6-running-it">Build it yourself</a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/home.jpg" alt="Home" width="200" />
+  <img src="docs/screenshots/home-categories.jpg" alt="Where it went" width="200" />
+  <img src="docs/screenshots/budgets.jpg" alt="Budgets" width="200" />
+  <img src="docs/screenshots/activity.jpg" alt="Activity" width="200" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/expenses.jpg" alt="Daily expenses" width="200" />
+  <img src="docs/screenshots/invoices.jpg" alt="Invoices" width="200" />
+  <img src="docs/screenshots/invoice-detail.jpg" alt="Invoice" width="200" />
+  <img src="docs/screenshots/home-dark.jpg" alt="Dark mode" width="200" />
+</p>
+
+<sub>Screenshots are the real app screens rendered with the built-in sample data (Settings → Load sample data). Names and numbers are fictional.</sub>
+
+---
 
 An Android app that reads EcoCash / OneMoney / Kashagi / Omari / bank SMS,
 logs transactions automatically, tracks daily expenses and budgets, and
@@ -22,6 +49,7 @@ produces branded PDF invoices with your logo and customer details.
 | **Settings** | Business profile (logo, EcoCash number, bank details, tax, invoice prefix), customers, SMS tracking (disclosure → permission → backfill with progress), monthly budgets, CSV export, light / dark / system theme |
 
 SMS tracking is opt-in. With it off the app works in **manual-only mode**.
+**Settings → Load sample data** fills an empty app with example transactions, budgets and invoices so you can look around.
 
 ## 2. Percentage UI (from pc_info)
 
@@ -37,6 +65,11 @@ The surrounding style follows pc_info too ([`src/core/theme.ts`](src/core/theme.
 flat bordered panes, grey captions over values, a 10pt margin grid, the lecui
 accent blue `#0078AA`, and pc_info's ok/not-ok green `rgb(0,150,0)` / red `rgb(200,0,0)`.
 Don't render percentages as plain text — use these components so the app stays consistent.
+
+## Brand
+
+Logo, icon and wordmark sources are in [`assets/brand/`](assets/brand) (SVG). The mark is the
+pc_info percentage ring around rising bars. App icon, adaptive icon and splash PNGs in `assets/` are rendered from them.
 
 ## 3. Project layout
 
@@ -55,7 +88,8 @@ src/
   pdf/                       invoiceTemplate (HTML), pdfGenerator (expo-print, share, logo embedding)
   features/                  screens per tab
   navigation/RootNavigator.tsx
-__tests__/                   parsers, summaries/invoice logic, percentage components
+__tests__/                   parsers, summaries/invoice logic, database, percentage components
+docs/                        landing page (GitHub Pages) and screenshots
 ```
 
 ## 4. SMS senders
@@ -105,9 +139,27 @@ npx expo run:android
 Test SMS features on a **physical phone with a SIM** — emulators don't receive EcoCash SMS.
 
 ```bash
-npm test            # Jest: parsers, summaries, invoice maths, percentage components
+npm test            # Jest: parsers, summaries, invoice maths, database, percentage components
 npm run typecheck   # tsc --noEmit
 ```
+
+### Web demo
+
+The same code runs in a browser (LokiJS/IndexedDB instead of SQLite, no SMS) and starts with sample data.
+That's how the screenshots above were made.
+
+```bash
+npx expo start --web
+```
+
+### APK via EAS
+
+```bash
+eas build -p android --profile preview
+```
+
+Builds are signed with a local keystore (`credentials/`, `credentials.json`), which is git-ignored.
+Back it up: without it you cannot ship updates to the same app.
 
 ## 7. Background processing
 
@@ -144,7 +196,7 @@ This is the main release risk. `READ_SMS` / `RECEIVE_SMS` are restricted to defa
 
 - Real SMS corpus for every provider + bank rules tuned per bank.
 - On-device verification of the native module, background fetch and PDF output (not possible in CI here).
-- App icon and splash (`assets/`), Play listing, privacy policy page.
+- Play listing and a hosted privacy policy page.
 - v1.1: SQLCipher-encrypted DB, PIN lock, invoice ↔ EcoCash credit reconciliation, Google Drive backup.
 
 ## License

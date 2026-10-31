@@ -37,3 +37,7 @@ export async function headlessSync(event: HeadlessEvent) {
   }
   await runSync(event.taskId);
 }
+
+export function registerHeadlessSync() {
+  BackgroundFetch.registerHeadlessTask(headlessSync);
+}

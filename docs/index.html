@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrackFinance — your EcoCash money, tracked automatically</title>
+<meta name="description" content="TrackFinance reads your EcoCash, OneMoney, Kashagi, Omari and bank SMS on your phone and turns them into budgets, spending insights and branded PDF invoices. Built for Zimbabwe." />
+<link rel="icon" href="assets/favicon.png" />
+<meta property="og:title" content="TrackFinance" />
+<meta property="og:description" content="Your EcoCash money, tracked automatically. Budgets, Kashagi loans, Omari savings and invoices — all on your phone." />
+<meta property="og:image" content="assets/logo-wordmark.png" />
+<style>
+  :root {
+    --bg: #F0F0F0; --pane: #FFFFFF; --border: #E1E1E1; --text: #202020; --muted: #6B6B6B;
+    --accent: #0078AA; --accent-dark: #005F88; --ok: #009600; --notok: #C80000; --green: #7FD36B;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1E1E1E; --pane: #2B2B2B; --border: #3A3A3A; --text: #EBEBEB; --muted: #A0A0A0; --accent: #2E9BD6; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; color: var(--text); text-decoration: none; }
+  .brand img { width: 36px; height: 36px; border-radius: 9px; }
+  .brand span { color: var(--accent); }
+  nav .links a { margin-left: 22px; color: var(--muted); text-decoration: none; font-size: 15px; }
+  nav .links a:hover { color: var(--text); }
+
+  .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center; padding: 40px 0 72px; }
+  .eyebrow { display: inline-block; font-size: 12px; letter-spacing: .8px; text-transform: uppercase; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 5px 12px; border-radius: 99px; margin-bottom: 18px; }
+  h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.5px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { font-size: 19px; color: var(--muted); max-width: 540px; margin: 0 0 28px; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 16px; border: 1px solid var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-dark); }
+  .btn.ghost { color: var(--accent); background: transparent; }
+  .fine { font-size: 13px; color: var(--muted); margin-top: 14px; }
+
+  .phone { justify-self: center; width: min(330px, 80vw); border-radius: 36px; padding: 10px; background: #111; box-shadow: 0 30px 60px -20px rgba(0,0,0,.35); }
+  .phone img { display: block; width: 100%; border-radius: 28px; }
+
+  section { padding: 64px 0; }
+  h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 12px; letter-spacing: -0.3px; }
+  .sub { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 0 36px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--pane); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .card h3 { margin: 10px 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-size: 20px; }
+
+  .gallery { display: flex; gap: 18px; overflow-x: auto; padding: 6px 2px 18px; scroll-snap-type: x mandatory; }
+  .gallery figure { margin: 0; flex: 0 0 230px; scroll-snap-align: start; }
+  .gallery img { width: 100%; border-radius: 18px; border: 1px solid var(--border); display: block; }
+  .gallery figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+
+  /* pc_info-style percentage demo */
+  .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+  .meter-row { display: flex; gap: 28px; justify-content: center; }
+  .dial { text-align: center; }
+  .cap { font-size: 11px; letter-spacing: .6px; color: var(--muted); text-transform: uppercase; }
+  .ring { --p: 50; --c: var(--accent); width: 84px; height: 84px; border-radius: 50%; margin: 8px auto 0; display: grid; place-items: center;
+          background: radial-gradient(closest-side, var(--pane) 88%, transparent 89%), conic-gradient(var(--c) calc(var(--p) * 1%), #DCDCDC 0); }
+  @media (prefers-color-scheme: dark) { .ring { background: radial-gradient(closest-side, var(--pane) 88%, transparent 89%), conic-gradient(var(--c) calc(var(--p) * 1%), #474747 0); } }
+  .bar-label b { font-weight: 400; font-size: 17px; }
+  .bar { height: 6px; border-radius: 3px; background: #DCDCDC; overflow: hidden; margin: 6px 0 4px; }
+  .bar i { display: block; height: 100%; }
+  .bar-note { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+
+  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .step { background: var(--pane); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 10px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  .privacy { background: var(--accent); color: #fff; border-radius: 20px; padding: 40px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+  .privacy img { width: 96px; }
+  .privacy h2 { color: #fff; }
+  .privacy p { margin: 0; opacity: .92; font-size: 17px; }
+
+  .download { text-align: center; }
+  .download .ctas { justify-content: center; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+  @media (max-width: 860px) {
+    .hero, .meters, .privacy { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr 1fr; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    nav .links { display: none; }
+    .privacy { text-align: center; } .privacy img { margin: 0 auto; }
+  }
+  @media (max-width: 540px) { .grid, .steps { grid-template-columns: 1fr; } section { padding: 44px 0; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#"><img src="assets/icon.svg" alt="" /><b>Track<span>Finance</span></b></a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#screens">Screens</a>
+        <a href="#privacy">Privacy</a>
+        <a href="https://github.com/Ngoni-Sama/TrackFinance">GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <span class="eyebrow">Built for Zimbabwe · Android</span>
+        <h1>Your EcoCash money, <em>tracked automatically.</em></h1>
+        <p class="lede">TrackFinance reads your EcoCash, OneMoney, Kashagi, Omari and bank SMS and turns them into budgets, spending insights and professional invoices, all on your phone.</p>
+        <div class="ctas">
+          <a class="btn primary" href="https://github.com/Ngoni-Sama/TrackFinance/releases/latest">⬇ Download for Android</a>
+          <a class="btn ghost" href="https://github.com/Ngoni-Sama/TrackFinance">View source</a>
+        </div>
+        <p class="fine">Free and open source · Android 8.0+ · Works offline · USD &amp; ZWG</p>
+      </div>
+      <div class="phone"><img src="screenshots/home.jpg" alt="TrackFinance home screen showing today's spend, income spent and Kashagi loan progress" /></div>
+    </header>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Everything your money is doing, at a glance</h2>
+      <p class="sub">No typing in every transaction. When an EcoCash SMS lands, TrackFinance logs it, files it under the right category and updates your totals.</p>
+      <div class="grid">
+        <div class="card"><div class="icon">✉</div><h3>Reads money SMS</h3><p>EcoCash, OneMoney, CBZ, Steward, FBC, ZB, NMB, Stanbic and BancABC. Airtime spam and network alerts are ignored.</p></div>
+        <div class="card"><div class="icon">◔</div><h3>Budgets that warn you</h3><p>Set a monthly limit per category and watch it fill up: green, then amber at 80%, red when you go over.</p></div>
+        <div class="card"><div class="icon">⇄</div><h3>Kashagi &amp; Omari aware</h3><p>Loans show how much you've repaid and when the rest is due. Omari transfers count as savings, not spending.</p></div>
+        <div class="card"><div class="icon">▤</div><h3>Daily expense log</h3><p>Add cash spending by hand with a receipt photo. See each day, week or month split by category.</p></div>
+        <div class="card"><div class="icon">✎</div><h3>Branded PDF invoices</h3><p>Your logo, line items, VAT and EcoCash or bank details. Share by WhatsApp or email and track what's been paid.</p></div>
+        <div class="card"><div class="icon">⌂</div><h3>Learns your merchants</h3><p>Recategorise a payment once and TrackFinance remembers that merchant from then on.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap meters">
+      <div>
+        <h2>Percentages you can read in a second</h2>
+        <p class="sub">Every number that matters is a dial or a bar: how much of your income is gone, how far through the month you are, how much of a loan is repaid. If the first dial is ahead of the second, slow down.</p>
+      </div>
+      <div class="card">
+        <div class="meter-row">
+          <div class="dial"><div class="cap">Income spent</div><div class="ring" style="--p:46;--c:#009600">46%</div></div>
+          <div class="dial"><div class="cap">Month elapsed</div><div class="ring" style="--p:61">61%</div></div>
+        </div>
+        <div style="margin-top:20px">
+          <div class="bar-label"><b style="color:#C87800">93%</b> of Food budget</div>
+          <div class="bar"><i style="width:93%;background:#C87800"></i></div>
+          <div class="bar-note">$139.50 of $150.00</div>
+          <div class="bar-label"><b style="color:#009600">45%</b> repaid</div>
+          <div class="bar"><i style="width:45%;background:#009600"></i></div>
+          <div class="bar-note">Kashagi · due 28 Nov</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="wrap">
+      <h2>Take a look</h2>
+      <p class="sub">Real screens from the app, filled with sample data.</p>
+      <div class="gallery">
+        <figure><img src="screenshots/home.jpg" alt="Home" loading="lazy" /><figcaption>Home</figcaption></figure>
+        <figure><img src="screenshots/home-categories.jpg" alt="Where it went" loading="lazy" /><figcaption>Where it went</figcaption></figure>
+        <figure><img src="screenshots/budgets.jpg" alt="Budgets" loading="lazy" /><figcaption>Budgets</figcaption></figure>
+        <figure><img src="screenshots/activity.jpg" alt="Activity" loading="lazy" /><figcaption>Activity</figcaption></figure>
+        <figure><img src="screenshots/expenses.jpg" alt="Daily expenses" loading="lazy" /><figcaption>Daily expenses</figcaption></figure>
+        <figure><img src="screenshots/invoices.jpg" alt="Invoices" loading="lazy" /><figcaption>Invoices</figcaption></figure>
+        <figure><img src="screenshots/invoice-detail.jpg" alt="Invoice" loading="lazy" /><figcaption>Invoice</figcaption></figure>
+        <figure><img src="screenshots/home-dark.jpg" alt="Dark mode" loading="lazy" /><figcaption>Dark mode</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Up and running in a minute</h2>
+      <div class="steps">
+        <div class="step"><p>Install the APK and open TrackFinance.</p></div>
+        <div class="step"><p>Turn on SMS tracking and allow SMS access when Android asks.</p></div>
+        <div class="step"><p>It scans the last 6 months of money SMS, without duplicates.</p></div>
+        <div class="step"><p>Set budgets, add your business details, and send your first invoice.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <div class="privacy">
+        <img src="assets/logo-mark.svg" alt="" />
+        <div>
+          <h2>Your SMS never leave your phone</h2>
+          <p>Messages are read and parsed on your device. Only money SMS from known senders are used; personal messages are skipped. No account, no server, no upload. Don't want SMS access? Use manual mode.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="download">
+    <div class="wrap">
+      <h2>Start tracking today</h2>
+      <p class="sub" style="margin-left:auto;margin-right:auto">Free for individuals, freelancers and small businesses.</p>
+      <div class="ctas">
+        <a class="btn primary" href="https://github.com/Ngoni-Sama/TrackFinance/releases/latest">⬇ Download the APK</a>
+        <a class="btn ghost" href="https://github.com/Ngoni-Sama/TrackFinance#readme">Read the docs</a>
+      </div>
+      <p class="fine">Android may warn about installing apps from outside Google Play. Allow it for this download in your settings.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 TrackFinance · MIT licence</span>
+      <span>Made in Zimbabwe 🇿🇼</span>
+    </div>
+  </footer>
+</body>
+</html>

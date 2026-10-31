@@ -60,7 +60,7 @@ function Tabs() {
         headerTintColor: t.text,
       })}
     >
-      <Tab.Screen name="Home" component={DashboardScreen} options={{ title: 'TrackFinance' }} />
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ title: 'TrackFinance', tabBarLabel: 'Home' }} />
       <Tab.Screen name="Activity" component={TransactionsScreen} />
       <Tab.Screen name="Expenses" component={ExpensesScreen} />
       <Tab.Screen name="Invoices" component={InvoicesScreen} />

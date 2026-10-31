@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Platform, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSettingsStore } from './core/settingsStore';
 import { useTheme } from './core/theme';
+import { isEmpty, seedDemoData } from './data/demoData';
 import { hydrateSettings } from './data/settings';
 import { RootNavigator } from './navigation/RootNavigator';
 import { startBackgroundSync } from './sms/backgroundSync';
@@ -18,7 +19,11 @@ export default function App() {
   const dark = themeMode === 'dark' || (themeMode === 'system' && system === 'dark');
 
   useEffect(() => {
-    hydrateSettings().catch((e) => {
+    (async () => {
+      // The web build is a demo: start it with sample data.
+      if (Platform.OS === 'web' && (await isEmpty())) await seedDemoData();
+      await hydrateSettings();
+    })().catch((e) => {
       console.warn('[TrackFinance] settings load failed', e);
       useSettingsStore.getState().set({ hydrated: true });
     });

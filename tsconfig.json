@@ -5,7 +5,15 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "baseUrl": ".",
-    "types": ["jest"]
+    "types": [
+      "jest"
+    ],
+    "strictPropertyInitialization": false
   },
-  "include": ["index.ts", "src", "__tests__", "modules"]
+  "include": [
+    "index.ts",
+    "src",
+    "__tests__",
+    "modules"
+  ]
 }

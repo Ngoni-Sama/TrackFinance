@@ -6,8 +6,9 @@ import { Row, Screen, Segmented } from '../../components/Controls';
 import { Pane, Separator } from '../../components/Pane';
 import { Body, Caption } from '../../components/Typography';
 import { ThemeMode, useSettingsStore } from '../../core/settingsStore';
+import { clearAllData, isEmpty, seedDemoData } from '../../data/demoData';
 import { exportCsv } from '../../data/repositories';
-import { setThemeMode } from '../../data/settings';
+import { hydrateSettings, setThemeMode } from '../../data/settings';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { shareCsv } from '../../pdf/pdfGenerator';
 
@@ -35,6 +36,18 @@ export function SettingsScreen() {
     }
   };
 
+  const onSample = async () => {
+    if (!(await isEmpty())) return Alert.alert('Already has data', 'Sample data can only be loaded into an empty app.');
+    await seedDemoData();
+    Alert.alert('Sample data loaded', 'Have a look around the Home, Activity and Invoices tabs.');
+  };
+
+  const onErase = () =>
+    Alert.alert('Erase all data?', 'This permanently deletes everything stored by TrackFinance on this phone. It cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Erase', style: 'destructive', onPress: () => clearAllData().then(hydrateSettings) },
+    ]);
+
   return (
     <Screen>
       <Pane title="Business">
@@ -48,6 +61,11 @@ export function SettingsScreen() {
         <Link title="Monthly budgets" onPress={() => nav.navigate('Budgets')} />
         <Separator />
         <Link title="Export to CSV" subtitle="Transactions and expenses, for Excel or Sheets" onPress={onExport} />
+      </Pane>
+      <Pane title="Sample data">
+        <Link title="Load sample data" subtitle="Fill an empty app with example transactions, budgets and invoices" onPress={onSample} />
+        <Separator />
+        <Link title="Erase all data" subtitle="Delete every transaction, expense, invoice and setting on this phone" onPress={onErase} />
       </Pane>
       <Pane title="Appearance">
         <Segmented
