@@ -13,3 +13,4 @@ npm-debug.*
 credentials/
 credentials.json
 .claude/
+build-release.log

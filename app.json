@@ -54,7 +54,8 @@
           "cameraPermission": false
         }
       ],
-      "react-native-background-fetch"
+      "react-native-background-fetch",
+      "./plugins/withReleaseSigning"
     ],
     "extra": {
       "eas": {

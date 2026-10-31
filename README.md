@@ -23,6 +23,10 @@ SMS-powered budgets, expenses and invoices for Zimbabwe.</p>
   <img src="docs/screenshots/invoice-detail.jpg" alt="Invoice" width="200" />
   <img src="docs/screenshots/home-dark.jpg" alt="Dark mode" width="200" />
 </p>
+<p align="center">
+  <img src="docs/screenshots/coach.jpg" alt="Coach: forecast and upcoming bills" width="200" />
+  <img src="docs/screenshots/coach-recurring.jpg" alt="Coach: recurring payments" width="200" />
+</p>
 
 <sub>Screenshots are the real app screens rendered with the built-in sample data (Settings → Load sample data). Names and numbers are fictional.</sub>
 
@@ -33,7 +37,7 @@ logs transactions automatically, tracks daily expenses and budgets, and
 produces branded PDF invoices with your logo and customer details.
 
 - **Platform:** Android 8.0+ (API 26). iOS does not allow reading SMS.
-- **Data:** on-device only (WatermelonDB on SQLite). No server, no account.
+- **Data:** stored on-device only (WatermelonDB on SQLite). No account. The optional AI coach sends a snapshot of your finances (including recent SMS text) to a Cloudflare Worker only when you ask it something; see [`ai-worker/`](ai-worker).
 - **Stack:** Expo SDK 51 (prebuild / bare workflow), React Native 0.74, TypeScript.
 
 ---
@@ -45,6 +49,7 @@ produces branded PDF invoices with your logo and customer details.
 | **Home** | Today's spend, month-to-date vs the same point last month, income received, *income spent* vs *month elapsed* dials, Kashagi loan repaid %, Omari savings balance, spending by category (donut + bars), budgets, 6-month trend, recent activity |
 | **Activity** | All SMS + manual entries; search, filter (spent / received / savings / loans), per-currency |
 | **Expenses** | Daily / weekly / monthly groups with category-share chips; tap a day to edit its entries; add expenses with receipt photo |
+| **Coach** | Month-end forecast, upcoming bills (next 31 days), recurring payments and subscriptions with merchant logos, millionaire plan (years to goal, monthly saving needed), and an opt-in **AI coach** (Cloudflare Workers AI) that answers questions and guesses what unclear payments were for |
 | **Invoices** | Collected % and overdue % dials, invoice list by status, builder with line items + tax, PDF preview / share (WhatsApp, email), paid / sent / draft |
 | **Settings** | Business profile (logo, EcoCash number, bank details, tax, invoice prefix), customers, SMS tracking (disclosure → permission → backfill with progress), monthly budgets, CSV export, light / dark / system theme |
 
@@ -65,6 +70,13 @@ The surrounding style follows pc_info too ([`src/core/theme.ts`](src/core/theme.
 flat bordered panes, grey captions over values, a 10pt margin grid, the lecui
 accent blue `#0078AA`, and pc_info's ok/not-ok green `rgb(0,150,0)` / red `rgb(200,0,0)`.
 Don't render percentages as plain text — use these components so the app stays consistent.
+
+## AI coach (Cloudflare Workers AI)
+
+[`ai-worker/`](ai-worker) is a small Worker that forwards questions to `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
+It stores nothing, limits each device and IP to 20 requests a minute, and caps total use at 45 requests a day
+so it stays inside Workers AI's free allowance. The app only calls it after the user turns the coach on and
+accepts a disclosure. Deploy your own with `cd ai-worker && npx wrangler deploy`, then set `expo.extra.aiUrl` in `app.json`.
 
 ## Brand
 
