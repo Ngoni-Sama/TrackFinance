@@ -21,6 +21,21 @@ export function useEntries() {
   return { entries, txs: plainTxs, smsById };
 }
 
+/** What the user has taught the app: their own labels and notes, and remembered merchants. Fed to the AI. */
+export function useUserLabels() {
+  const txs = useQuery(queries.transactions);
+  const memory = useQuery(queries.merchantMemory);
+  const labelled = useMemo(
+    () =>
+      txs
+        .filter((t) => t.userCategorised || t.note)
+        .map((t) => ({ id: t.id, title: t.counterparty || 'Payment', amount: t.amount, currency: t.currency, category: t.category ?? 'other', note: t.note, occurredAt: t.occurredAt })),
+    [txs],
+  );
+  const merchantMemory = useMemo(() => Object.fromEntries(memory.map((m) => [m.merchant, m.category])), [memory]);
+  return { labelled, merchantMemory };
+}
+
 /** Selected display currency, defaulting to the business profile's currency. */
 export function useCurrency(): [string, (c: string) => void] {
   const profile = useQuery(queries.profile)[0];

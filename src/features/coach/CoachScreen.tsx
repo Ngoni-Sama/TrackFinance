@@ -26,7 +26,7 @@ import { queries } from '../../data/repositories';
 import { useQuery } from '../../data/useObservable';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { buildSnapshot } from '../../ai/assistant';
-import { CurrencySwitch, useCurrency, useEntries } from '../shared';
+import { CurrencySwitch, useCurrency, useEntries, useUserLabels } from '../shared';
 import { AiCoach } from './AiCoach';
 
 const CADENCE_LABEL = { weekly: 'every week', fortnightly: 'every 2 weeks', monthly: 'every month' } as const;
@@ -91,8 +91,9 @@ export function CoachScreen() {
       .slice(0, 20);
   }, [entries, currency]);
 
-  const snapshot = (toExplain?: string[]) =>
-    buildSnapshot({ currency, entries, smsById, recurring, upcoming, forecast, budgets: usage, loan, savings, goal: gInput, toExplain });
+  const { labelled, merchantMemory } = useUserLabels();
+  const snapshot = () =>
+    buildSnapshot({ currency, entries, smsById, recurring, upcoming, forecast, budgets: usage, loan, savings, goal: gInput, labelled, merchantMemory });
 
   const commitGoal = () => {
     const next = { target: num(goalDraft.target) || DEFAULT_GOAL.target, otherAssets: num(goalDraft.otherAssets), annualReturn: num(goalDraft.annualReturn) };
@@ -237,6 +238,8 @@ export function CoachScreen() {
       <AiCoach
         snapshot={snapshot}
         unclear={unclearPayments}
+        onSortOut={() => nav.navigate('SortOut')}
+        onProvider={() => nav.navigate('AiProvider')}
       />
     </Screen>
   );

@@ -57,7 +57,8 @@ function sms(now: Date): [string, string, Date][] {
   add('+263164USD', 'You have sent USD 35.00 to 0712987654 BLESSING DUBE. Txn ID: BD0. New wallet balance: USD 554.10.', d(1, 20));
   add('CBZ', 'CBZ: Acc 01234XXXX debited with USD 45.00 POS purchase at SPAR BORROWDALE. Avail Bal USD 410.20', d(7, 18));
   add('+263143', 'Your 1GB data bundle has been activated.', d(4, 19)); // noise: ignored
-  return out;
+  // Early in the month some "this month" samples would land in the future: drop those.
+  return out.filter(([, , at]) => at.getTime() <= now.getTime());
 }
 
 export async function isEmpty(): Promise<boolean> {

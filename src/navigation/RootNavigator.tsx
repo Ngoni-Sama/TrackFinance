@@ -20,6 +20,9 @@ import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { SmsSetupScreen } from '../features/settings/SmsSetupScreen';
 import { TransactionDetailScreen } from '../features/transactions/TransactionDetailScreen';
 import { TransactionsScreen } from '../features/transactions/TransactionsScreen';
+import { SortOutScreen } from '../features/transactions/SortOutScreen';
+import { DuplicatesScreen } from '../features/transactions/DuplicatesScreen';
+import { AiProviderScreen } from '../features/settings/AiProviderScreen';
 
 export type RootStackParamList = {
   Tabs: undefined;
@@ -33,6 +36,9 @@ export type RootStackParamList = {
   CustomerEdit: { id?: string; pick?: boolean };
   BusinessProfile: undefined;
   SmsSetup: undefined;
+  SortOut: undefined;
+  Duplicates: undefined;
+  AiProvider: undefined;
 };
 
 export type ScreenProps<K extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, K>;
@@ -91,6 +97,9 @@ export function RootNavigator({ dark }: { dark: boolean }) {
         <Stack.Screen name="CustomerEdit" component={CustomerEditScreen} options={{ title: 'Customer' }} />
         <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ title: 'Business profile' }} />
         <Stack.Screen name="SmsSetup" component={SmsSetupScreen} options={{ title: 'SMS tracking' }} />
+        <Stack.Screen name="SortOut" component={SortOutScreen} options={{ title: 'Sort out payments' }} />
+        <Stack.Screen name="Duplicates" component={DuplicatesScreen} options={{ title: 'Duplicates' }} />
+        <Stack.Screen name="AiProvider" component={AiProviderScreen} options={{ title: 'AI provider' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

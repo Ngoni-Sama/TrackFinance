@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, TextInput, View } from 'react-native';
-import { askAssistant, ChatMessage, explainPayments, isAssistantConfigured, Suggestion } from '../../ai/assistant';
+import { askAssistant, ChatMessage, isAssistantConfigured } from '../../ai/assistant';
+import { loadAiConfig, providerInfo } from '../../ai/config';
 import { Button, Chip, Row } from '../../components/Controls';
-import { MerchantAvatar } from '../../components/MerchantAvatar';
 import { Pane, Separator } from '../../components/Pane';
 import { Body, Caption, Title } from '../../components/Typography';
-import { categoryLabel } from '../../core/constants';
-import { formatMoney } from '../../core/currency';
 import { useSettingsStore } from '../../core/settingsStore';
 import { Entry } from '../../core/summaries';
 import { fontSize, margin, radius, useTheme } from '../../core/theme';
-import { find, recategoriseTransaction } from '../../data/repositories';
 import { setAiEnabled } from '../../data/settings';
 
 const STARTERS = [
@@ -65,16 +62,24 @@ function Bubble({ m }: { m: ChatMessage }) {
   );
 }
 
-export function AiCoach({ snapshot, unclear }: { snapshot: (toExplain?: string[]) => string; unclear: Entry[] }) {
+export function AiCoach({ snapshot, unclear, onSortOut, onProvider }: {
+  snapshot: () => string;
+  unclear: Entry[];
+  onSortOut: () => void;
+  onProvider: () => void;
+}) {
   const t = useTheme();
   const enabled = useSettingsStore((s) => s.aiEnabled);
   const [disclosure, setDisclosure] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
-  const [busy, setBusy] = useState<'chat' | 'explain' | null>(null);
+  const [busy, setBusy] = useState<'chat' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
-  const [applied, setApplied] = useState<Set<string>>(new Set());
+  const [providerLabel, setProviderLabel] = useState('');
+
+  useEffect(() => {
+    loadAiConfig().then((c) => setProviderLabel(c.provider === 'cloudflare' ? 'free assistant' : `${providerInfo(c.provider).label} · ${c.model}`));
+  }, [enabled]);
 
   if (!isAssistantConfigured) return null;
 
@@ -115,68 +120,22 @@ export function AiCoach({ snapshot, unclear }: { snapshot: (toExplain?: string[]
     }
   };
 
-  const explain = async () => {
-    setBusy('explain');
-    setError(null);
-    try {
-      setSuggestions(await explainPayments(snapshot(unclear.map((u) => u.id))));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const apply = async (s: Suggestion) => {
-    const tx = await find.transaction(s.id).catch(() => null);
-    if (!tx) return;
-    await recategoriseTransaction(tx, s.category);
-    setApplied((a) => new Set(a).add(s.id));
-  };
-
-  const byId = new Map(unclear.map((u) => [u.id, u]));
-
   return (
     <Pane title="AI coach" right={<Pressable onPress={() => setAiEnabled(false)}><Caption upper={false}>turn off</Caption></Pressable>}>
+      <Pressable onPress={onProvider}>
+        <Caption upper={false} style={{ marginBottom: margin }}>
+          Answering: {providerLabel} · change ›
+        </Caption>
+      </Pressable>
       {unclear.length > 0 && (
         <>
           <Body muted>
             Payments to {unclear.length} {unclear.length === 1 ? 'person or merchant are' : 'people or merchants are'} filed under "Other".
           </Body>
-          <Button title={`Guess what ${unclear.length === 1 ? 'it was' : 'they were'} for`} variant="secondary" onPress={explain} loading={busy === 'explain'} />
+          <Button title="Sort them out with the coach" variant="secondary" onPress={onSortOut} />
+          <Separator />
         </>
       )}
-      {suggestions && (
-        <View style={{ marginBottom: margin }}>
-          {suggestions.length === 0 && <Body muted>The coach couldn't make a confident guess.</Body>}
-          {suggestions
-            .filter((s) => byId.has(s.id))
-            .map((s) => {
-              const e = byId.get(s.id)!;
-              const done = applied.has(s.id);
-              return (
-                <Row key={s.id} style={{ paddingVertical: 6, alignItems: 'flex-start' }}>
-                  <View style={{ marginRight: margin }}>
-                    <MerchantAvatar name={e.title} category={s.category} size={32} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Body numberOfLines={1}>
-                      {e.title} · {formatMoney(e.amount, e.currency)}
-                    </Body>
-                    <Caption upper={false}>
-                      {categoryLabel(s.category)} ({s.confidence}) — {s.reason}
-                    </Caption>
-                  </View>
-                  <Pressable onPress={() => apply(s)} disabled={done} style={{ marginLeft: margin }}>
-                    <Body style={{ color: done ? t.ok : t.accent, fontWeight: '600' }}>{done ? 'Done' : 'Apply'}</Body>
-                  </Pressable>
-                </Row>
-              );
-            })}
-          <Separator />
-        </View>
-      )}
-
       {messages.length === 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: margin / 2 }}>
           {STARTERS.map((s) => (

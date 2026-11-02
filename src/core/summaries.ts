@@ -14,6 +14,8 @@ export interface TxLike {
   balanceAfter?: number | null;
   dueAt?: number | null;
   senderId?: string;
+  note?: string | null;
+  userCategorised?: boolean;
 }
 
 export interface ExpenseLike {

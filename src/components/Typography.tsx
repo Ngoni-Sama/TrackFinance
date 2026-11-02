@@ -33,15 +33,16 @@ export function Highlight({ value, suffix, color, size = 'highlight' }: {
   );
 }
 
-export function Body({ children, style, muted, numberOfLines }: {
+export function Body({ children, style, muted, numberOfLines, onPress }: {
   children: React.ReactNode;
   style?: TextStyle;
   muted?: boolean;
   numberOfLines?: number;
+  onPress?: () => void;
 }) {
   const t = useTheme();
   return (
-    <Text numberOfLines={numberOfLines} style={[{ color: muted ? t.caption : t.text, fontSize: fontSize.detail }, style]}>
+    <Text numberOfLines={numberOfLines} onPress={onPress} style={[{ color: muted ? t.caption : t.text, fontSize: fontSize.detail }, style]}>
       {children}
     </Text>
   );

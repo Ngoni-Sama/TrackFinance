@@ -58,6 +58,10 @@ export function SettingsScreen() {
       <Pane title="Tracking">
         <Link title="SMS tracking" subtitle={smsEnabled ? 'On — reading mobile money SMS on this phone' : 'Off — manual entries only'} onPress={() => nav.navigate('SmsSetup')} />
         <Separator />
+        <Link title="Sort out payments" subtitle="Say what payments were for; the app and the AI learn from it" onPress={() => nav.navigate('SortOut')} />
+        <Separator />
+        <Link title="Find duplicates" subtitle="Review transactions saved more than once" onPress={() => nav.navigate('Duplicates')} />
+        <Separator />
         <Link title="Monthly budgets" onPress={() => nav.navigate('Budgets')} />
         <Separator />
         <Link title="Export to CSV" subtitle="Transactions and expenses, for Excel or Sheets" onPress={onExport} />
@@ -88,6 +92,8 @@ export function SettingsScreen() {
           <Segmented options={['on', 'off'] as const} value={merchantLogos ? 'on' : 'off'} onChange={(v) => setMerchantLogos(v === 'on')} labels={{ on: 'On', off: 'Off' }} />
         </Row>
         <Caption upper={false}>Loads website icons for known companies (sends only the company's web address).</Caption>
+        <Separator />
+        <Link title="AI provider" subtitle="Free assistant, or your own Claude / OpenAI / Gemini key" onPress={() => nav.navigate('AiProvider')} />
         {aiEnabled ? (
           <>
             <Separator />

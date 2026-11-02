@@ -2,7 +2,7 @@
   "expo": {
     "name": "TrackFinance",
     "slug": "trackfinance",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "platforms": [
@@ -24,7 +24,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0078AA"
-      }
+      },
+      "versionCode": 2
     },
     "plugins": [
       [
@@ -55,7 +56,8 @@
         }
       ],
       "react-native-background-fetch",
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

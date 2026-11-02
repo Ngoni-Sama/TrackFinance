@@ -26,6 +26,7 @@ SMS-powered budgets, expenses and invoices for Zimbabwe.</p>
 <p align="center">
   <img src="docs/screenshots/coach.jpg" alt="Coach: forecast and upcoming bills" width="200" />
   <img src="docs/screenshots/coach-recurring.jpg" alt="Coach: recurring payments" width="200" />
+  <img src="docs/screenshots/sort-out.jpg" alt="Sort out payments with the AI coach" width="200" />
 </p>
 
 <sub>Screenshots are the real app screens rendered with the built-in sample data (Settings → Load sample data). Names and numbers are fictional.</sub>
@@ -50,6 +51,7 @@ produces branded PDF invoices with your logo and customer details.
 | **Activity** | All SMS + manual entries; search, filter (spent / received / savings / loans), per-currency |
 | **Expenses** | Daily / weekly / monthly groups with category-share chips; tap a day to edit its entries; add expenses with receipt photo |
 | **Coach** | Month-end forecast, upcoming bills (next 31 days), recurring payments and subscriptions with merchant logos, millionaire plan (years to goal, monthly saving needed), and an opt-in **AI coach** (Cloudflare Workers AI) that answers questions and guesses what unclear payments were for |
+| **Sort out** | One person or merchant at a time: history, original SMS, the AI's guess (with a question when it's unsure), category, a "what was it for?" note, and "apply to all their payments". Your labels teach the app and the AI |
 | **Invoices** | Collected % and overdue % dials, invoice list by status, builder with line items + tax, PDF preview / share (WhatsApp, email), paid / sent / draft |
 | **Settings** | Business profile (logo, EcoCash number, bank details, tax, invoice prefix), customers, SMS tracking (disclosure → permission → backfill with progress), monthly budgets, CSV export, light / dark / system theme |
 
@@ -77,6 +79,19 @@ Don't render percentages as plain text — use these components so the app stays
 It stores nothing, limits each device and IP to 20 requests a minute, and caps total use at 45 requests a day
 so it stays inside Workers AI's free allowance. The app only calls it after the user turns the coach on and
 accepts a disclosure. Deploy your own with `cd ai-worker && npx wrangler deploy`, then set `expo.extra.aiUrl` in `app.json`.
+
+### AI provider: free or your own key
+
+Settings → **AI provider** chooses who answers: the free Cloudflare Worker (default), or **Claude**, **OpenAI** or **Gemini**
+with your own API key. Keys are stored in Android's secure storage and sent only to that provider; requests go straight
+from the phone, never through TrackFinance's server. Gemini keys from Google AI Studio have a free tier. (Samsung/Pixel's
+built-in Gemini assistant can't be called by other apps.)
+
+### Duplicates
+
+Each SMS is fingerprinted by its transaction ID, or by sender family + text + day, so the live listener and inbox scan
+can't both save it. The check and save run in one database transaction, and payments reported by two senders
+(EcoCash + Omari, EcoCash + Kashagi) are kept once. Activity shows a banner to review any duplicates saved earlier.
 
 ## Brand
 

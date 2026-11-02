@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'transactions',
@@ -21,6 +21,8 @@ export const schema = appSchema({
         { name: 'fingerprint', type: 'string', isIndexed: true }, // de-duplicates re-scanned SMS
         { name: 'occurred_at', type: 'number', isIndexed: true },
         { name: 'created_at', type: 'number' },
+        { name: 'note', type: 'string', isOptional: true }, // v2: what the user says it was for
+        { name: 'user_categorised', type: 'boolean', isOptional: true }, // v2: category set by the user
       ],
     }),
     tableSchema({

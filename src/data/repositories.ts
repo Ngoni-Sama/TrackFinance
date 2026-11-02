@@ -2,7 +2,7 @@ import { Model, Q } from '@nozbe/watermelondb';
 import { categorise, normaliseMerchant } from '../core/categorise';
 import { computeInvoiceTotals, LineItemInput, nextInvoiceNumber } from '../core/invoiceMath';
 import { ExpenseLike, TxLike } from '../core/summaries';
-import { hashString } from '../core/utils';
+import { crossSourceTwin, DedupeRow, DuplicateGroup, findDuplicateGroups, fingerprint } from '../core/dedupe';
 import { ParsedTransaction } from '../sms/parsers/types';
 import {
   Budget,
@@ -35,6 +35,7 @@ export const queries = {
   invoiceItems: (invoiceId: string) => invoiceItems().query(Q.where('invoice_id', invoiceId), Q.sortBy('position', Q.asc)),
   budgets: () => budgets().query(),
   profile: () => profiles().query(),
+  merchantMemory: () => merchants().query(),
 };
 
 export const find = {
@@ -56,6 +57,8 @@ export function txToPlain(t: Transaction): TxLike {
     balanceAfter: t.balanceAfter,
     dueAt: t.dueAt,
     senderId: t.senderId,
+    note: t.note,
+    userCategorised: !!t.userCategorised,
   };
 }
 
@@ -75,7 +78,7 @@ export function expenseToPlain(e: Expense): ExpenseLike {
 
 /** Same SMS re-read during a rescan → same fingerprint, so it is inserted once. */
 export function fingerprintOf(p: Pick<ParsedTransaction, 'senderId' | 'rawBody' | 'date' | 'reference'>): string {
-  return p.reference ? `ref:${p.reference}` : `h:${hashString(`${p.senderId}|${p.date.getTime()}|${p.rawBody}`)}`;
+  return fingerprint(p);
 }
 
 export async function loadMerchantMemory(): Promise<Map<string, string>> {
@@ -83,47 +86,157 @@ export async function loadMerchantMemory(): Promise<Map<string, string>> {
   return new Map(rows.map((r) => [r.merchant, r.category]));
 }
 
-/** Insert parsed SMS, skipping ones already stored. Returns how many were new. */
+const toRow = (t: Transaction): DedupeRow => ({
+  id: t.id,
+  amount: t.amount,
+  currency: t.currency,
+  type: t.type,
+  senderId: t.senderId,
+  rawBody: t.rawBody,
+  reference: t.reference,
+  occurredAt: t.occurredAt,
+  counterparty: t.counterparty,
+});
+
+const sameText = (a: string, b: string) => a.replace(/\s+/g, ' ').trim().toUpperCase() === b.replace(/\s+/g, ' ').trim().toUpperCase();
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Insert parsed SMS, skipping ones already stored. Returns how many were new.
+ *
+ * The duplicate check and the insert run inside one database write, so the
+ * live listener, startup sync and background sync can't both save the same SMS.
+ * A payment reported by two senders (EcoCash + Omari, EcoCash + Kashagi) is
+ * kept once, as the more specific savings/loan record.
+ */
 export async function insertParsedTransactions(parsed: ParsedTransaction[]): Promise<number> {
   if (!parsed.length) return 0;
   const memory = await loadMerchantMemory();
-  const fps = parsed.map(fingerprintOf);
-  const existing = await transactions().query(Q.where('fingerprint', Q.oneOf(fps))).fetch();
-  const seen = new Set(existing.map((t) => t.fingerprint));
 
-  const toCreate: Transaction[] = [];
-  parsed.forEach((p, i) => {
-    const fp = fps[i];
-    if (seen.has(fp)) return;
-    seen.add(fp);
-    toCreate.push(
-      transactions().prepareCreate((t) => {
-        t.amount = p.amount;
-        t.currency = p.currency;
-        t.type = p.type;
-        t.category = categorise(p, memory);
-        t.counterparty = p.counterparty ?? null;
-        t.reference = p.reference ?? null;
-        t.balanceAfter = p.balance ?? null;
-        t.charges = p.charges ?? null;
-        t.dueAt = p.dueAt?.getTime() ?? null;
-        t.senderId = p.senderId;
-        t.rawBody = p.rawBody;
-        t.source = 'sms';
-        t.fingerprint = fp;
-        t.occurredAt = p.date.getTime();
-      }),
-    );
+  return database.write(async () => {
+    const fps = parsed.map(fingerprintOf);
+    const seen = new Set((await transactions().query(Q.where('fingerprint', Q.oneOf(fps))).fetch()).map((t) => t.fingerprint));
+
+    const times = parsed.map((p) => p.date.getTime());
+    const nearby = await transactions()
+      .query(Q.where('occurred_at', Q.between(Math.min(...times) - DAY_MS, Math.max(...times) + DAY_MS)))
+      .fetch();
+    const rows = nearby.map(toRow);
+    const records = new Map(nearby.map((t) => [t.id, t]));
+
+    // Decide everything first, then write each record exactly once: WatermelonDB won't let a
+    // record created or updated earlier in the same batch be updated again.
+    type Upgrade = Pick<ParsedTransaction, 'type' | 'counterparty' | 'balance' | 'dueAt' | 'category'>;
+    const plans: { id: string; fp: string; p: ParsedTransaction }[] = [];
+    const planById = new Map<string, ParsedTransaction>();
+    const upgrades = new Map<string, Upgrade>(); // existing record id → savings/loan details to apply
+
+    parsed.forEach((p, i) => {
+      const fp = fps[i];
+      if (seen.has(fp)) return;
+      const at = p.date.getTime();
+      // Saved before fingerprints were sender/time independent: same text within a day.
+      // Different transaction IDs are always different payments.
+      const sameSms = (r: DedupeRow) => !(r.reference && p.reference && r.reference !== p.reference) && sameText(r.rawBody, p.rawBody);
+      if (rows.some((r) => Math.abs(r.occurredAt - at) <= DAY_MS && r.amount === p.amount && sameSms(r))) return;
+      seen.add(fp);
+
+      const candidate: DedupeRow = { id: `plan-${i}`, amount: p.amount, currency: p.currency, type: p.type, senderId: p.senderId, rawBody: p.rawBody, reference: p.reference, occurredAt: at, counterparty: p.counterparty };
+      const twin = rows.map((r) => ({ r, t: crossSourceTwin(candidate, r) })).find((x) => x.t);
+      if (twin?.t) {
+        if (twin.t.keep === candidate) {
+          // The new SMS is the specific one (Omari/Kashagi): give its meaning to the EcoCash record.
+          const upgrade: Upgrade = { type: p.type, counterparty: p.counterparty, balance: p.balance, dueAt: p.dueAt, category: p.category };
+          const planned = planById.get(twin.r.id);
+          if (planned) Object.assign(planned, Object.fromEntries(Object.entries(upgrade).filter(([, v]) => v !== undefined)));
+          else upgrades.set(twin.r.id, { ...upgrades.get(twin.r.id), ...upgrade });
+          twin.r.type = p.type;
+        }
+        return;
+      }
+
+      const copy = { ...p };
+      plans.push({ id: candidate.id, fp, p: copy });
+      planById.set(candidate.id, copy);
+      rows.push(candidate);
+    });
+
+    const ops: Transaction[] = [];
+    for (const [id, u] of upgrades) {
+      const existing = records.get(id);
+      if (!existing) continue;
+      ops.push(
+        existing.prepareUpdate((t) => {
+          t.type = u.type;
+          t.category = categorise({ type: u.type, counterparty: u.counterparty ?? t.counterparty, category: u.category }, memory);
+          t.counterparty = u.counterparty ?? t.counterparty;
+          t.balanceAfter = u.balance ?? t.balanceAfter;
+          t.dueAt = u.dueAt?.getTime() ?? t.dueAt;
+        }),
+      );
+    }
+    for (const { fp, p } of plans) {
+      ops.push(
+        transactions().prepareCreate((t) => {
+          t.amount = p.amount;
+          t.currency = p.currency;
+          t.type = p.type;
+          t.category = categorise(p, memory);
+          t.counterparty = p.counterparty ?? null;
+          t.reference = p.reference ?? null;
+          t.balanceAfter = p.balance ?? null;
+          t.charges = p.charges ?? null;
+          t.dueAt = p.dueAt?.getTime() ?? null;
+          t.senderId = p.senderId;
+          t.rawBody = p.rawBody;
+          t.source = 'sms';
+          t.fingerprint = fp;
+          t.occurredAt = p.date.getTime();
+        }),
+      );
+    }
+
+    if (ops.length) await database.batch(...ops);
+    return plans.length;
   });
-  if (toCreate.length) await database.write(() => database.batch(...toCreate));
-  return toCreate.length;
 }
 
-/** Re-categorise a transaction and remember the choice for this merchant (and its past rows). */
-export async function recategoriseTransaction(tx: Transaction, category: string) {
+/** Duplicates already saved (before this fix), for the review screen. */
+export async function loadDuplicateGroups(): Promise<DuplicateGroup[]> {
+  const all = await transactions().query().fetch();
+  const dismissed = new Set(JSON.parse((await database.localStorage.get<string>('dup_dismissed')) ?? '[]') as string[]);
+  return findDuplicateGroups(all.map(toRow)).filter((g) => !dismissed.has(g.key));
+}
+
+export async function removeDuplicates(group: DuplicateGroup) {
+  const recs = await transactions().query(Q.where('id', Q.oneOf(group.remove.map((r) => r.id)))).fetch();
+  await database.write(() => database.batch(...recs.map((r) => r.prepareDestroyPermanently())));
+}
+
+export async function dismissDuplicate(group: DuplicateGroup) {
+  const list = JSON.parse((await database.localStorage.get<string>('dup_dismissed')) ?? '[]') as string[];
+  await database.localStorage.set('dup_dismissed', JSON.stringify([...new Set([...list, group.key])]));
+}
+
+export interface ClassifyOptions {
+  /** Also file this merchant/person's other payments under the category, now and in future. Default true. */
+  remember?: boolean;
+  /** What the user says the payment was for. */
+  note?: string | null;
+}
+
+/** Set a transaction's category (and note) as the user's own choice, optionally remembering it for the merchant. */
+export async function recategoriseTransaction(tx: Transaction, category: string, opts: ClassifyOptions = {}) {
+  const remember = opts.remember ?? true;
   await database.write(async () => {
-    const ops: Model[] = [tx.prepareUpdate((t) => (t.category = category))];
-    if (tx.counterparty) {
+    const ops: Model[] = [
+      tx.prepareUpdate((t) => {
+        t.category = category;
+        t.userCategorised = true;
+        if (opts.note !== undefined) t.note = opts.note?.trim() || null;
+      }),
+    ];
+    if (remember && tx.counterparty) {
       const key = normaliseMerchant(tx.counterparty);
       const [mem] = await merchants().query(Q.where('merchant', key)).fetch();
       ops.push(
@@ -134,8 +247,9 @@ export async function recategoriseTransaction(tx: Transaction, category: string)
               m.category = category;
             }),
       );
+      // Only fill in ones the user hasn't sorted themselves.
       const same = await transactions().query(Q.where('counterparty', tx.counterparty), Q.where('id', Q.notEq(tx.id))).fetch();
-      for (const s of same) if (s.category === 'other') ops.push(s.prepareUpdate((x) => (x.category = category)));
+      for (const s of same) if (!s.userCategorised) ops.push(s.prepareUpdate((x) => (x.category = category)));
     }
     await database.batch(...ops);
   });

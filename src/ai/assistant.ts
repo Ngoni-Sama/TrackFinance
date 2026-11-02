@@ -1,26 +1,23 @@
 import Constants from 'expo-constants';
-import { format, startOfMonth, subMonths, endOfMonth } from 'date-fns';
+import { format, startOfMonth, subMonths, endOfMonth, getDate } from 'date-fns';
+import { normaliseMerchant } from '../core/categorise';
 import { GoalInput, MonthForecast, planGoal, Recurring, Upcoming } from '../core/insights';
 import { BudgetUsage, categoryBreakdown, Entry, LoanStatus, sumEntries } from '../core/summaries';
 import { database } from '../data/db';
+import { loadAiConfig } from './config';
+import { COACH_SYSTEM, REASONS_SCHEMA, REASONS_SYSTEM } from './prompts';
+import { claudeChat, claudeJson } from './providers/claude';
+import { geminiChat, geminiJson } from './providers/gemini';
+import { openaiChat, openaiJson } from './providers/openai';
+import { ChatMessage, Suggestion } from './types';
+
+export type { ChatMessage, Suggestion } from './types';
 
 const AI_URL: string = (Constants.expoConfig?.extra as { aiUrl?: string } | undefined)?.aiUrl ?? '';
 
 export const isAssistantConfigured = AI_URL.length > 0;
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-export interface Suggestion {
-  id: string;
-  category: string;
-  reason: string;
-  confidence: 'low' | 'medium' | 'high';
-}
-
-/** Random per-install id, only used by the server's rate limiter. */
+/** Random per-install id, only used by the free server's rate limiter. */
 async function deviceId(): Promise<string> {
   const key = 'device_id';
   let id = await database.localStorage.get<string>(key);
@@ -31,8 +28,8 @@ async function deviceId(): Promise<string> {
   return id;
 }
 
-async function call<T>(body: object): Promise<T> {
-  if (!AI_URL) throw new Error('The assistant is not configured in this build.');
+async function callWorker<T>(body: object): Promise<T> {
+  if (!AI_URL) throw new Error('The free assistant is not configured in this build.');
   const res = await fetch(`${AI_URL}/v1/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Device-Id': await deviceId() },
@@ -43,19 +40,46 @@ async function call<T>(body: object): Promise<T> {
   return data;
 }
 
-export async function askAssistant(messages: ChatMessage[], context: string): Promise<string> {
-  // The server accepts at most 16 messages; keep the latest turns.
-  const { reply } = await call<{ reply: string }>({ mode: 'chat', messages: messages.slice(-12), context });
-  return reply;
+async function withKey() {
+  const cfg = await loadAiConfig();
+  if (cfg.provider !== 'cloudflare' && !cfg.apiKey) throw new Error('Add your API key in Settings → AI provider.');
+  return cfg as typeof cfg & { apiKey: string };
 }
 
+export async function askAssistant(messages: ChatMessage[], context: string): Promise<string> {
+  const recent = messages.slice(-12);
+  const cfg = await withKey();
+  switch (cfg.provider) {
+    case 'claude':
+      return claudeChat(cfg.apiKey, cfg.model, COACH_SYSTEM, context, recent);
+    case 'openai':
+      return openaiChat(cfg.apiKey, cfg.model, COACH_SYSTEM, context, recent);
+    case 'gemini':
+      return geminiChat(cfg.apiKey, cfg.model, COACH_SYSTEM, context, recent);
+    default:
+      return (await callWorker<{ reply: string }>({ mode: 'chat', messages: recent, context })).reply;
+  }
+}
+
+const EXPLAIN = 'Explain the payments in to_explain.';
+
 export async function explainPayments(context: string): Promise<Suggestion[]> {
-  const { suggestions } = await call<{ suggestions: Suggestion[] }>({
-    mode: 'reasons',
-    messages: [{ role: 'user', content: 'Explain the payments in to_explain.' }],
-    context,
-  });
-  return Array.isArray(suggestions) ? suggestions : [];
+  const cfg = await withKey();
+  let out: { suggestions?: Suggestion[] };
+  switch (cfg.provider) {
+    case 'claude':
+      out = await claudeJson(cfg.apiKey, cfg.model, REASONS_SYSTEM, context, EXPLAIN, REASONS_SCHEMA);
+      break;
+    case 'openai':
+      out = await openaiJson(cfg.apiKey, cfg.model, REASONS_SYSTEM, context, EXPLAIN, REASONS_SCHEMA);
+      break;
+    case 'gemini':
+      out = await geminiJson(cfg.apiKey, cfg.model, REASONS_SYSTEM, context, EXPLAIN, REASONS_SCHEMA);
+      break;
+    default:
+      out = await callWorker<{ suggestions: Suggestion[] }>({ mode: 'reasons', messages: [{ role: 'user', content: EXPLAIN }], context });
+  }
+  return Array.isArray(out.suggestions) ? out.suggestions : [];
 }
 
 // ── Context snapshot ──────────────────────────────────────────────────────
@@ -74,6 +98,35 @@ export interface SnapshotInput {
   goal: GoalInput;
   /** Transaction ids to ask "what was this for?" about. */
   toExplain?: string[];
+  /** Payments the user classified themselves (ground truth for the model). */
+  labelled?: { title: string; amount: number; currency: string; category: string; note?: string | null; occurredAt: number }[];
+  /** Merchant/person → category the user chose before. */
+  merchantMemory?: Record<string, string>;
+}
+
+/** How often, how much and when this merchant/person has been paid: evidence for guessing why. */
+export function merchantHistory(entries: Entry[], title: string) {
+  const key = normaliseMerchant(title);
+  const paid = entries.filter((e) => e.direction === 'out' && normaliseMerchant(e.title) === key).sort((a, b) => a.occurredAt - b.occurredAt);
+  if (!paid.length) return undefined;
+  const amounts = paid.map((e) => e.amount).sort((a, b) => a - b);
+  const days = paid.map((e) => getDate(e.occurredAt));
+  const dayCounts = new Map<number, number>();
+  days.forEach((d) => dayCounts.set(d, (dayCounts.get(d) ?? 0) + 1));
+  const [usualDay, usualDayCount] = [...dayCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  return {
+    times_paid: paid.length,
+    total: r2(paid.reduce((a, e) => a + e.amount, 0)),
+    typical_amount: amounts[Math.floor(amounts.length / 2)],
+    smallest: amounts[0],
+    largest: amounts[amounts.length - 1],
+    first: format(paid[0].occurredAt, 'yyyy-MM-dd'),
+    last: format(paid[paid.length - 1].occurredAt, 'yyyy-MM-dd'),
+    usual_day_of_month: usualDayCount > 1 ? usualDay : undefined,
+    looks_like: /^[A-Z][A-Z'-]+( [A-Z][A-Z'-]+){1,2}$/.test(title.trim()) && !/(LTD|PVT|INC|SHOP|STORE|BANK|ZIMBABWE|PHARMACY|SCHOOL)/i.test(title)
+      ? 'a person'
+      : 'a business or service',
+  };
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -131,7 +184,13 @@ export function buildSnapshot(input: SnapshotInput, now = new Date()): string {
       needed_per_month_10y: r2(plan.neededPerMonth(10)),
       needed_per_month_20y: r2(plan.neededPerMonth(20)),
     },
-    to_explain: input.toExplain ? entries.filter((e) => input.toExplain!.includes(e.id)).map(tx) : undefined,
+    user_labels: (input.labelled ?? []).slice(0, 60).map((l) => ({
+      title: l.title, amount: l.amount, currency: l.currency, category: l.category, note: l.note || undefined, date: format(l.occurredAt, 'yyyy-MM-dd'),
+    })),
+    merchant_memory: input.merchantMemory,
+    to_explain: input.toExplain
+      ? entries.filter((e) => input.toExplain!.includes(e.id)).map((e) => ({ ...tx(e), history: merchantHistory(entries, e.title) }))
+      : undefined,
     recent_transactions: recent.map(tx),
   };
 

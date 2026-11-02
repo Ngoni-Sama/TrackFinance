@@ -20,6 +20,8 @@ export class Transaction extends Model {
   @field('fingerprint') fingerprint: string;
   @field('occurred_at') occurredAt: number;
   @readonly @date('created_at') createdAt: Date;
+  @text('note') note: string | null;
+  @field('user_categorised') userCategorised: boolean | null;
 }
 
 export class Expense extends Model {
